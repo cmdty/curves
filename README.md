@@ -39,7 +39,7 @@ For use from Python install the curves package from PyPI.
 ```
 
 ### Using From C#
-See examples of usage in [here](samples/c#).
+For examples of usage see samples/c#/.
 
 ### Using From Python
 See the Jupyter Notebook [curves_quick_start_tutorial](samples/python/curves_quick_start_tutorial.ipynb) for an introduction on how to use the Python API.
