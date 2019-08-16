@@ -7,7 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Curves.Samples.Bootst
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A6AE2E42-A14D-43C3-8C0F-FDE7AD54C835}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\cake.config = ..\..\cake.config
 		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject

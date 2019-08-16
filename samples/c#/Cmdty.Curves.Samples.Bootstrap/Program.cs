@@ -40,8 +40,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
             var jan20 = Month.CreateJanuary(2020);
 
             // Bootstrapping 1 quarterly price and 1 monthly price into a monthly curve
-            var (pieceWiseCurve, bootstrappedContracts) = Bootstrapper<Month>
-                                .StartBuilding
+            var (pieceWiseCurve, bootstrappedContracts) = new Bootstrapper<Month>()
                                 .AddContract(jan20, 19.05)
                                 .AddContract(Quarter.CreateQuarter1(2020), 17.22)
                                 .Bootstrap();
@@ -65,8 +64,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
 
             // Shaping applied as a ratio between Feb and Mar
             const double ratio = 1.1;
-            var (pieceWiseCurveWithRatio, _) = Bootstrapper<Month>
-                .StartBuilding
+            var (pieceWiseCurveWithRatio, _) = new Bootstrapper<Month>()
                 .AddContract(jan20, 19.05)
                 .AddContract(Quarter.CreateQuarter1(2020), 17.22)
                 .AddShaping(Shaping<Month>.Ratio.Between(feb20).And(mar20).Is(ratio))
@@ -85,8 +83,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
 
             // Shaping applied as a spread between Feb and Mar
             const double spread = 0.21;
-            var (pieceWiseCurveWithSpread, _) = Bootstrapper<Month>
-                .StartBuilding
+            var (pieceWiseCurveWithSpread, _) = new Bootstrapper<Month>()
                 .AddContract(jan20, 19.05)
                 .AddContract(Quarter.CreateQuarter1(2020), 17.22)
                 .AddShaping(Shaping<Month>.Spread.Between(feb20).And(mar20).Is(spread))
@@ -109,8 +106,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
             try
             {
                 // If the price of Feb-20 is added, this essentially represents redundancy in the inputs, resulting in an exception
-                Bootstrapper<Month>
-                    .StartBuilding
+                new Bootstrapper<Month>()
                     .AddContract(jan20, 22.95)
                     .AddContract(feb20, 21.05)
                     .AddContract(Quarter.CreateQuarter1(2020), 19.05)
@@ -127,8 +123,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
             Console.WriteLine();
 
             // Using AllowRedundancy() allows the calculation to perform without checks on redundancy
-            var (pieceWiseCurveWithRedundancy, _) = Bootstrapper<Month>
-                            .StartBuilding
+            var (pieceWiseCurveWithRedundancy, _) = new Bootstrapper<Month>()
                             .AddContract(jan20, 22.95)
                             .AddContract(feb20, 21.05)
                             .AddContract(Quarter.CreateQuarter1(2020), 19.05)
@@ -153,8 +148,7 @@ namespace Cmdty.Curves.Samples.Bootstrap
 
             var holidays = new List<Day>(){new Day(2020, 1, 1)};
             Func<Month, double> busDayWeight = Weighting.BusinessDayCount<Month>(holidays);
-            var (pieceWiseCurveBusDayWeight, _) = Bootstrapper<Month>
-                            .StartBuilding
+            var (pieceWiseCurveBusDayWeight, _) = new Bootstrapper<Month>()
                             .AddContract(jan20, 19.05)
                             .AddContract(Quarter.CreateQuarter1(2020), 17.22)
                             .WithAverageWeighting(busDayWeight)

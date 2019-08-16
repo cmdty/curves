@@ -35,8 +35,7 @@ namespace Cmdty.Curves.Samples.Spline
         static void Main(string[] args)
         {
             // All parameters added
-            var curve1 = MaxSmoothnessSplineCurveBuilder<Day>
-                .StartBuilding
+            var curve1 = new MaxSmoothnessSplineCurveBuilder<Day>()
                 .AddContract(Month.CreateJuly(2019), 77.98)
                 .AddContract(Month.CreateAugust(2019), 76.01)
                 .AddContract(Month.CreateSeptember(2019), 78.74)
@@ -50,8 +49,7 @@ namespace Cmdty.Curves.Samples.Spline
 
 
             // Just seasonal adjustment
-            var curve4 = MaxSmoothnessSplineCurveBuilder<Day>
-                .StartBuilding
+            var curve4 = new MaxSmoothnessSplineCurveBuilder<Day>()
                 .AddContract(new CalendarYear(2018), 78.95)
                 .AddContract(new CalendarYear(2019), 80.18)
                 .AddContract(new CalendarYear(2020), 81.25)
@@ -83,8 +81,7 @@ namespace Cmdty.Curves.Samples.Spline
                 Contract<Month>.Create(Quarter.CreateQuarter4(2020), 74.92),
             };
 
-            var curveBusDayWeight = MaxSmoothnessSplineCurveBuilder<Month>
-                .StartBuilding
+            var curveBusDayWeight = new MaxSmoothnessSplineCurveBuilder<Month>()
                 .AddContracts(contracts)
                 .WithWeighting(busDayWeight)
                 .BuildCurve();
