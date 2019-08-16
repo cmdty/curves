@@ -246,7 +246,7 @@ Task("Default")
     .IsDependentOn("Pack-Python");
 
 Task("CI")
-	.IsDependentOn("Push-NuGetToCmdtyFeed")
+	.IsDependentOn("Pack-NuGet")
     .IsDependentOn("Pack-Python");
 
 RunTarget(target);

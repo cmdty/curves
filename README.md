@@ -1,7 +1,6 @@
 Commodity Curves
 ================
-
-[![Build Status](https://fowlerjake.visualstudio.com/EnergyQuantLibrary/_apis/build/status/curves/curves%20CI?branchName=master)](https://fowlerjake.visualstudio.com/EnergyQuantLibrary/_build/latest?definitionId=6&branchName=master)
+[![Build Status](https://dev.azure.com/cmdty/github/_apis/build/status/cmdty.curves?branchName=master)](https://dev.azure.com/cmdty/github/_build/latest?definitionId=1&branchName=master)
 [![NuGet](https://img.shields.io/nuget/v/cmdty.curves.svg)](https://www.nuget.org/packages/Cmdty.Curves/)
 [![PyPI](https://img.shields.io/pypi/v/curves.svg)](https://pypi.org/project/curves/)
 
@@ -47,4 +46,4 @@ See the Jupyter Notebook (TODO link) for an introduction on how to use the Pytho
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
