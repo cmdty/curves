@@ -108,7 +108,7 @@ Task("Build-Samples")
 });
 
 Task("Pack-NuGet")
-	.IsDependentOn("Build-Samples")
+//	.IsDependentOn("Build-Samples")
 	.IsDependentOn("Test-C#")
 	.IsDependentOn("Clean-Artifacts")
 	.Does(() =>
