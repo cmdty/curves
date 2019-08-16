@@ -1,0 +1,4 @@
+pythonnet==2.4.0
+setuptools==40.8.0
+wheel==0.33.1
+pandas==0.24.2

@@ -1,0 +1,378 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[round]{natbib}
+\usepackage{url}
+\usepackage{hyperref}
+
+\title{Maximum Smoothness Algorithm for Building Forward Curves}
+\author{Jake C. Fowler}
+\date{June 2019}
+
+\begin{document}
+\newcommand{\+}[1]{\ensuremath{\mathbf{#1}}}
+
+\maketitle
+
+\section{Introduction}
+This document describes the maximum-smoothness algorithm used to increase the granularity of constructed forward curves.
+The rest of this document will refer to forward prices and curves, even though the same methodology can be applied to futures and swap instruments as well.
+
+\bigskip
+The methodology is an adaption of that described in \citep{Unknown}. 
+This makesreference to \cite{Benth} and \cite{Lim}, the later reference which uses maximum smoothness
+in the context of building interest rate forward curves.
+% TODO reference online article and Benth
+
+\section{Deriving the Algorithm}
+\subsection{Functional Form}
+The base of the algorithm is a spline, which by definition is made up of piecewise polynomial functions.
+\begin{equation}
+p(t) = 
+\begin{cases}
+    p_1(t)\qquad \text{for}\ \quad t \in [t_0, t_1) \\
+    p_2(t)\qquad \text{for}\ \quad t \in [t_1, t_2) \\
+    \;\vdots \\
+    p_{n-1}(t)\quad \text{for}\ \quad t \in [t_{n-2}, t_{n-1}) \\
+    p_n(t)\qquad \text{for}\ \quad t \in [t_{n-1}, t_n]
+\end{cases}
+\end{equation}
+Where $t_0 < t_1 < \hdots < t_{n-1} < t_{n}$ are the boundary points between the polynomials which make up the spline.
+In the context of building a forward curve, the variable $t$ is defined as
+the time until start of delivery of a forward contract.
+
+\bigskip
+
+The boundary points are chosen to be start of the input forward prices. It is also
+assumed that the input forward prices are not for delivery periods which overlap
+with any other input. Gaps between input forward contracts are permitted, in which
+case a boundary point will exit for the start of the gap.
+
+\bigskip
+
+The individual polynomial functions $p_n$ themselves are of order 4, hence take the form:
+\begin{equation}
+p_i(t) = a_i + b_i t + c_i t^2 + d_i t^3 + e_i t^4
+\end{equation}
+The curve fitting algorithm essentially involves solving for the polynomial parameters
+$a_i$, $b_i$, $c_i$, $d_i$, and $e_i$ for $i=i \hdots n$.
+
+\bigskip
+In many cases the spline described above is not sufficient to derive a forward curve which
+shows strong price seasonality, especially when this seasonality cannot be directly observed
+in the traded forward prices. An example of this is the day-of-week seasonality for gas and
+power prices, which generally are lower at the weekend when demand is lower. As such the 
+function form is as follows:
+
+\begin{equation}
+    \label{eq:foward_function}
+    f(t) = (p(t) + S_{add}(t))S_{mult}(t)
+\end{equation}
+
+Where the forward price for the period starting delivery at time $t$ is given by $f(t)$, which 
+consists of $p(t)$ adjusted by two arbitrary seasonal adjustment functions
+$S_{add}(t)$ an additive adjustment, and $S_{mult}(t)$ a multiplicative adjustment.
+
+
+\subsection{Constraints}
+\subsubsection{Polynomial Boundary Point Constraints}
+As usual with splines, constraints are put in place that adjascent polynomials have equal value, first derivative, and second derivatives at the boundary points.
+These three constraints can be respectively expressed as:
+\begin{equation}
+    \label{eq:continuity_constraint}
+    a_i + b_i t + c_i t^2 + d_i t^3 + e_i t^4 - 
+    a_{i+1} - b_{i+1} t - c_{i+1} t^2 - d_{i+1} t^3 - e_{i+1} t^4 = 0
+\end{equation}
+
+\begin{equation}
+    \label{eq:1st_deriv_constraint}
+    b_i + 2 c_i t + 3 d_i t^2 + 4 e_i t^3 - 
+    b_{i+1} - 2 c_{i+1} t - 3 d_{i+1} t^2 - 4 e_{i+1} t^3 = 0
+\end{equation}
+
+\begin{equation}
+    \label{eq:2nd_deriv_constraint}
+    2 c_i + 6 d_i t + 12 e_i t^2 - 
+    2 c_{i+1} - 6 d_{i+1} t - 12 e_{i+1} t^2 = 0
+\end{equation}
+The above three equations should hold for the boundary points \\
+$t \in \{t_1, t_2, \hdots, t_{n-2}, t_{n-1}\}$.
+
+\subsubsection{Forward Price Constraint}
+The most important constraints is that the derived forward curve averages back to the 
+input traded forward prices.
+The market inputs to the forward curve model are traded forward prices $F_i$.
+Setting this equal to the average of the derived smooth curve:
+
+\begin{equation}
+    \label{eq:traded_forward_calc}
+    F_i = \frac{\sum_{t \in T_i} (p(t) + S_{add}(t))S_{mult}(t)w(t)}
+    {\sum_{t \in T_i} w(t)}
+\end{equation}
+
+Where $w(t)$ is a weighting function and $T_i$ is the set of all delivery start times
+for the delivery periods at the granularity of the curve being built. The weighting function has two
+meanings from a busines perspective.
+\begin{itemize}
+    \item The discount factor, because the no-arbitrage price of a forward contract is equal 
+    to the discount factor weighted average of its components. However, in a low interest rate 
+    environment, the discount factor can be approximated as 1.0 for all maturities, in which case 
+    the discounting component can be ignored.
+    \item The volume of commodity delivered in each period. For example, an off-peak power forward 
+    contract in the UK delivers over 12 hours in on weekdays, and 24 hours on weekends, hence $w(t)$ 
+    would equal double for $t$ representing weekends compared to $w(t)$ when $t$ represents a weekday delivery. 
+    Clock changes can also cause the total volume delivered over a day in a fixed time zone to vary 
+    due to hours lost or gained. Hence $w(t)$ can be used to account for this.
+    \item For swaps which only fix on certain days (usually business days) $w(t)$ can be used to account 
+    for this by returning the number of fixing days in the period starting at $t$.
+    For example if deriving a a monthly curve $w(t)$ would evaluate to the number of fixing days in the 
+    month starting at $t$.
+\end{itemize}
+Equation \ref{eq:traded_forward_calc} can be transformed into an equation linear on the parameters of the piecewise polynomial by substituting
+in the polynomial representation of $p(t)$:
+
+\begin{equation}
+    \sum_{t \in T_i} (p_i(t) + S_{add}(t)) S_{mult}(t)w(t) = 
+    F_i \sum_{t \in T_i} w(t)
+\end{equation}
+Rearranging:
+\begin{equation}
+    \sum_{t \in T_i} (a_i + b_i t + c_i t^2 + d_i t^3 + e_i t^4  + 
+    S_{add}(t)) S_{mult}(t)w(t) = F_i \sum_{t \in T_i} w(t)
+\end{equation}
+Rearranging again gives a form linear with respect to the unknown polynomial coefficients $a_i$, $b_i$, $c_i$ and $d_i$.
+\begin{eqnarray}
+    \label{eq:price_constraint}
+    \nonumber
+    a_i \sum_{t \in T_i} S_{mult}(t)w(t) +
+    b_i \sum_{t \in T_i} S_{mult}(t)w(t) t +
+    c_i \sum_{t \in T_i} S_{mult}(t)w(t) t^2 + \\
+    \nonumber
+    d_i \sum_{t \in T_i} S_{mult}(t)w(t) t^3 +
+    e_i \sum_{t \in T_i} S_{mult}(t)w(t) t^4 = \\ 
+    F_i \sum_{t \in T_i} w(t) - 
+    \sum_{t \in T_i} S_{add}(t)S_{mult}(t)w(t)
+\end{eqnarray}
+
+In the case where there are gaps between the input forward contract delivery periods,
+the forward price constraint is simply omitted.
+
+\subsubsection{Matrix Form of Constraints}
+Equations \ref{eq:continuity_constraint}, \ref{eq:1st_deriv_constraint}, \ref{eq:2nd_deriv_constraint} and
+ \ref{eq:price_constraint} can be expressed as the linear system $\+{Ax = b}$ where:
+
+\begin{equation*}
+    \+x = \begin{bmatrix}
+        \+x_1 \\
+        \+x_2 \\
+        \vdots \\
+        \+x_{n-1} \\
+        \+x_n \\
+    \end{bmatrix}
+\end{equation*}
+
+\begin{equation*}
+    \+b = \begin{bmatrix}
+        \+b_1 \\
+        \+b_2 \\
+        \vdots \\
+        \+b_{n-1} \\
+        \+b_n \\
+    \end{bmatrix}
+\end{equation*}
+
+\begin{equation*}
+    \+A = \begin{bmatrix}
+        \+A_1 & \+0 & \hdots & \+0 & \+0 \\
+        \+0 & \+A_2 & \hdots & \+0 & \+0 \\
+        \vdots & & \ddots & & \vdots \\
+        \+0 & \+0 & & \+A_{n-1} & \+0 \\
+        \+0 & \+0 & \hdots & \+0 & \+A_n
+    \end{bmatrix}
+\end{equation*}
+
+And:
+\begin{equation*}
+    \+{x_i} = \begin{bmatrix}
+        a_i \\
+        b_i \\
+        c_i \\
+        d_i \\
+        e_i \\
+    \end{bmatrix}
+\end{equation*}
+
+\begin{equation*}
+    \+{b_i} = \begin{bmatrix}
+        0 \\
+        0 \\
+        0 \\
+        F_i \sum_{t \in T_i} w(t) - 
+        \sum_{t \in T_i} S_{add}(t)S_{mult}(t)w(t)
+    \end{bmatrix}
+\end{equation*}
+
+\begin{equation*}
+    \+A_i = \begin{bmatrix}
+        1 & t_i & t_i^2 & t_i^3 & t_i^4 & -1 & -t_i & -t_i^2 & -t_i^3 & -t_i^4 \\
+        0 & 1 & 2 t_i & 3 t_i^2 & 4 t_i^3 & 0 & -1 & -2 t_i & -3 t_i^2 & -4 t_i^3 \\
+        0 & 0 & 2 & 6 t & 12 t^2 & 0 & 0 & -2 & -6 t & -12 t^2 \\
+        f_i^1 & f_i^2 & f_i^3 & f_i^4 & f_i^5 & 0 & 0 & 0 & 0 & 0
+    \end{bmatrix}
+\end{equation*}
+Where the components in the last row are defined as:
+
+\begin{eqnarray}
+    \nonumber
+    f_i^1 = \sum_{t \in T_i} S_{mult}(t)w(t) \\
+    \nonumber
+    f_i^2 = \sum_{t \in T_i} S_{mult}(t)w(t) t \\
+    \nonumber
+    f_i^3 = \sum_{t \in T_i} S_{mult}(t)w(t) t^2 \\
+    \nonumber
+    f_i^4 = \sum_{t \in T_i} S_{mult}(t)w(t) t^3 \\
+    \nonumber
+    f_i^5 = \sum_{t \in T_i} S_{mult}(t)w(t) t^4  
+\end{eqnarray}
+
+\subsection{Smoothness Criteria}
+% TODO references
+Maximum smoothness is obtained by by finding the spline 
+parameters which minimise the integral of the second derivative.
+\begin{eqnarray}
+    \label{eq:11}
+    \nonumber
+    min \int_{t_0}^{t_n}p''(t)^2 dt = \sum_{i=1}^{n}\int_{t_{i - 1}}^{t_i}p''_i(t)^2dt \\
+    \nonumber
+    =\sum_{i=1}^{n}\int_{t_{i - 1}}^{t_i} (2 c_i + 6 d_i t + 12 e_i t^2)^2dt \\
+    \nonumber
+    =\sum_{i=1}^{n}\int_{t_{i - 1}}^{t_i} (4 c_i^2 + 24 c_i d_i t + 48 c_i e_i t^2 +
+    36 d_i^2 t^2 + 144 d_i e_i t^3 + 144 e_i^2 t^4)dt \\
+    =\sum_{i=1}^{n} 4 c_i^2 \Delta_i^1 + 12 c_i d_i \Delta_i^2
+    + 16 c_i e_i \Delta_i^3 + 12 d_i^2 \Delta_i^3 + 36 d_i e_i \Delta_i^4 +
+    \frac{144}{5} e_i^2 \Delta_i^5
+\end{eqnarray}
+Where $\Delta_i^j$ is defined as the difference between $t^j$ at the polynomial boundary points, 
+i.e. $\Delta_i^j = t_i^j - t_{i-1}^j$.
+Recognising \ref{eq:11} as a quadratic form it can be reformulating in the following matrix form:
+
+
+\begin{equation}
+    \label{eq:12}
+    \sum_{i=1}^{n}\+{x_i^TH_ix_i}
+\end{equation}
+Where:
+
+\begin{equation*}
+    \+{H_i} = \begin{bmatrix}
+        0 & 0 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0 \\
+        0 & 0 & 4 \Delta_i^1 & 6 \Delta_i^2 & 8 \Delta_i^3 \\
+        0 & 0 & 6 \Delta_i^2 & 12 \Delta_i^3 & 18 \Delta_i^4 \\
+        0 & 0 & 8 \Delta_i^3 & 18 \Delta_i^4 & \frac{144}{5} \Delta_i^5
+    \end{bmatrix}
+\end{equation*}
+The objective function \ref{eq:12} can be arranged into a single matrix quadratic form without
+the summation as:
+
+\begin{equation}
+    \+{x^THx}
+\end{equation}
+Where:
+
+\begin{equation*}
+    \+x = \begin{bmatrix}
+        \+x_1 \\
+        \+x_2 \\
+        \vdots \\
+        \+x_{n-1} \\
+        \+x_n \\
+    \end{bmatrix}
+\end{equation*}
+
+\begin{equation*}
+    \+H = \begin{bmatrix}
+        \+H_1 & \+0 & \hdots & \+0 & \+0 \\
+        \+0 & \+H_2 & \hdots & \+0 & \+0 \\
+        \vdots & & \ddots & & \vdots \\
+        \+0 & \+0 & & \+H_{n-1} & \+0 \\
+        \+0 & \+0 & \hdots & \+0 & \+H_n
+    \end{bmatrix}
+\end{equation*}
+
+\subsection{Minimisation Problem}
+The sections above show that finding the maximum smoothness curve comes down to finding
+the polynomial coefficients, vector $\+x$, which minimises $\+{x^THx}$, subject to the linear constraints
+$\+{Ax=b}$. This problem is well suited to the method of 
+Lagrange multipliers for which we first define the vector $\+\lambda$.
+
+\begin{equation}
+    \+\lambda = \begin{bmatrix}
+        \lambda_1 \\
+        \lambda_2 \\
+        \vdots \\
+        \lambda_{4n-2} \\
+        \lambda_{4n-1} \\
+    \end{bmatrix}
+\end{equation}
+
+\newcommand{\Lagr}{\mathcal{L}}
+
+\begin{equation}
+    \Lagr(\+{x, \lambda}) = \+{x^THx + \lambda^T(Ax - b)}
+\end{equation}
+The minima $\displaystyle\min_{x, \lambda}\Lagr(\+{x, \lambda})$ is found as the solution
+where the partial derivatives of $\Lagr(\+{x, \lambda})$ with respect to $\+x$ and $\+\lambda$
+are zero.
+
+\begin{equation}
+    \frac{\Lagr(\+{x, \lambda})}{\partial{\+x}} = \+{2Hx + A^T\lambda} = 0
+\end{equation}
+
+\begin{equation}
+    \frac{\Lagr(\+{x, \lambda})}{\partial{\+\lambda}} = \+{Ax - b} = 0
+\end{equation}
+These can be arranged into a single linear system:
+
+\begin{equation}
+    \begin{bmatrix}
+        \+{2H} & \+{A^T} \\
+        \+{A} & \+{0}
+    \end{bmatrix}
+    \begin{bmatrix}
+        \+{x_{min}} \\
+        \+{\lambda_{min}}
+    \end{bmatrix} = 
+    \begin{bmatrix}
+        \+{0} \\
+        \+{b}
+    \end{bmatrix}
+\end{equation}
+Hence the vector of spline polynomial coefficients for the maximum smoothness curve, $\+{x_{min}}$,
+can be found by solving this system.
+
+\begin{equation}
+    \label{eq:final_linear_prob}
+    \begin{bmatrix}
+        \+{x_{min}} \\
+        \+{\lambda_{min}}
+    \end{bmatrix} = 
+    \begin{bmatrix}
+        \+{2H} & \+{A^T} \\
+        \+{A} & \+{0}
+    \end{bmatrix}^{-1}
+    \begin{bmatrix}
+        \+{0} \\
+        \+{b}
+    \end{bmatrix}
+\end{equation}
+
+Once \ref{eq:final_linear_prob} is solved, the spline parameters are taken from $\+{x_{min}}$
+and the derived forward prices are calculated by evaluating \ref{eq:foward_function}.
+
+% TODO comment on number of solutions and whether this represents a minima or maxima
+
+
+\bibliographystyle{plainnat}
+\bibliography{max_smoothness_spline}
+
+\end{document}

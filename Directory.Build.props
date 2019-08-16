@@ -1,0 +1,11 @@
+﻿<Project>
+  <Import Project="version.props" />
+  <PropertyGroup>
+    <Authors>Jake Fowler</Authors>
+    <Copyright>Copyright © Jake Fowler 2019</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>../../StrongName.snk</AssemblyOriginatorKeyFile>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+</Project>

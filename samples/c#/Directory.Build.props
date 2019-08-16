@@ -1,0 +1,7 @@
+﻿<Project>
+  <PropertyGroup>
+    <Authors>Jake Fowler</Authors>
+    <Copyright>Copyright © Jake Fowler 2019</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+</Project>

@@ -1,19 +1,77 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+name: $(Date:yyyyMMdd)$(Rev:rr)
+pool:
+  vmImage: 'VS2017-Win2016'
 
 trigger:
-- initial_setup
-
-pool:
-  vmImage: 'ubuntu-latest'
+  batch: 'true'
+  branches:
+    include:
+    - master
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+  - task: PowerShell@2
+    displayName: 'Run Cake PowerShell Bootstrapper'
+    inputs:
+      filePath: 'build.ps1'
+      arguments: '-Verbosity Diagnostic -Target CI -BuildNumber=$(Build.BuildNumber)'
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  - task: PublishTestResults@2
+    displayName: Publish Python test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFiles: 'junit/test-results.xml'
+      mergeTestResults: true
+      testRunTitle: 'Python Unit Tests'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish .NET test results'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'VSTest'
+      testResultsFiles: '**/*.trx'
+      mergeTestResults: true
+      testRunTitle: 'C# Unit Tests'
+
+  - script: |
+      dotnet tool install -g dotnet-reportgenerator-globaltool
+      reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:Cobertura
+    condition: succeededOrFailed()
+    displayName: 'Create Code coverage report'
+
+  - task: PublishCodeCoverageResults@1
+    displayName: 'publish .NET coverage results'
+    condition: succeededOrFailed()
+    inputs:
+      codeCoverageTool: 'cobertura'
+      summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
+
+  - task: TwineAuthenticate@0
+    inputs:
+      artifactFeeds: 'Cmdty'
+    displayName: 'Twine Authenticate'
+
+  - script: 'twine upload -r Cmdty --config-file $(PYPIRC_PATH) src/Cmdty.Curves.Python/dist/**'
+    displayName: 'Upload Python package to Azure Artifacts Cmdty Feed'
+
+  - task: CopyFiles@2
+    displayName: Copy Python package to Artifact Staging Directory
+    inputs:
+      Contents: src/Cmdty.Curves.Python/dist/**
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+      cleanTargetFolder: true
+      flattenFolders: true
+
+  - task: CopyFiles@2
+    displayName: Copy NuGet package to Artifact Staging Directory
+    inputs:
+      Contents: artifacts/**
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+      flattenFolders: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'publish artifacts'
+    inputs:
+      ArtifactName: 'drop'
+

@@ -1,0 +1,83 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.329
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Curves", "src\Cmdty.Curves\Cmdty.Curves.csproj", "{66FAA402-ADEE-441C-AD27-AE7B517BE3F7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.TimePeriodValueTypes", "src\Cmdty.TimePeriodValueTypes\Cmdty.TimePeriodValueTypes.csproj", "{0D0350B0-C87A-4836-A58D-D31410AEC1D3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.TimePeriodValueTypes.Test", "tests\Cmdty.TimePeriodValueTypes.Test\Cmdty.TimePeriodValueTypes.Test.csproj", "{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.Curves.Test", "tests\Cmdty.Curves.Test\Cmdty.Curves.Test.csproj", "{99086912-2E4E-489D-9F8D-C1E457FB6647}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Cmdty.Curves.Python", "src\Cmdty.Curves.Python\Cmdty.Curves.Python.pyproj", "{565FF0CC-400D-4168-B956-77BD746D9A7C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.TimeSeries", "src\Cmdty.TimeSeries\Cmdty.TimeSeries.csproj", "{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cmdty.TimeSeries.Test", "tests\Cmdty.TimeSeries.Test\Cmdty.TimeSeries.Test.csproj", "{6DAE517D-EFE8-4A31-839E-C43C1E1A266F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{96607B5A-895C-4D52-B466-EB92019EE6F1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{20E0FE70-915E-4106-8FB3-25575FC8AED8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{27EED18D-CEC6-4C8D-823C-7318A3DB3CEB}"
+	ProjectSection(SolutionItems) = preProject
+		azure-pipelines.yml = azure-pipelines.yml
+		build.cake = build.cake
+		build.ps1 = build.ps1
+		build.sh = build.sh
+		cake.config = cake.config
+		Directory.Build.props = Directory.Build.props
+		version.props = version.props
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{66FAA402-ADEE-441C-AD27-AE7B517BE3F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66FAA402-ADEE-441C-AD27-AE7B517BE3F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66FAA402-ADEE-441C-AD27-AE7B517BE3F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66FAA402-ADEE-441C-AD27-AE7B517BE3F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D0350B0-C87A-4836-A58D-D31410AEC1D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D0350B0-C87A-4836-A58D-D31410AEC1D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D0350B0-C87A-4836-A58D-D31410AEC1D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D0350B0-C87A-4836-A58D-D31410AEC1D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99086912-2E4E-489D-9F8D-C1E457FB6647}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99086912-2E4E-489D-9F8D-C1E457FB6647}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99086912-2E4E-489D-9F8D-C1E457FB6647}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99086912-2E4E-489D-9F8D-C1E457FB6647}.Release|Any CPU.Build.0 = Release|Any CPU
+		{565FF0CC-400D-4168-B956-77BD746D9A7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{565FF0CC-400D-4168-B956-77BD746D9A7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DAE517D-EFE8-4A31-839E-C43C1E1A266F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DAE517D-EFE8-4A31-839E-C43C1E1A266F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DAE517D-EFE8-4A31-839E-C43C1E1A266F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DAE517D-EFE8-4A31-839E-C43C1E1A266F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{66FAA402-ADEE-441C-AD27-AE7B517BE3F7} = {96607B5A-895C-4D52-B466-EB92019EE6F1}
+		{0D0350B0-C87A-4836-A58D-D31410AEC1D3} = {96607B5A-895C-4D52-B466-EB92019EE6F1}
+		{2AB7F802-8C9F-4C12-B8D2-5B970604EB3E} = {20E0FE70-915E-4106-8FB3-25575FC8AED8}
+		{99086912-2E4E-489D-9F8D-C1E457FB6647} = {20E0FE70-915E-4106-8FB3-25575FC8AED8}
+		{565FF0CC-400D-4168-B956-77BD746D9A7C} = {96607B5A-895C-4D52-B466-EB92019EE6F1}
+		{0C29A964-FBAE-43CB-ACD2-1C4E0A51CAA9} = {96607B5A-895C-4D52-B466-EB92019EE6F1}
+		{6DAE517D-EFE8-4A31-839E-C43C1E1A266F} = {20E0FE70-915E-4106-8FB3-25575FC8AED8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B9E1DF29-2699-43B3-B9C6-FC91EA7FD0F7}
+	EndGlobalSection
+EndGlobal

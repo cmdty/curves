@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <PackageId>Cmdty.Curves</PackageId>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/cmdty/curves</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cmdty/curves</RepositoryUrl>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <NoWarn>NU1605</NoWarn>
+    <LangVersion>latest</LangVersion>
+    <Description>Tools for building commodity forward, swaps, and futures curves.</Description>
+    <PackageTags>commodities;trading;curves;oil;gas;power;quantitative;finance</PackageTags>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PythonPreReleaseTextPart>a</PythonPreReleaseTextPart>
+    <PythonVersion Condition="'$(BuildNumber)' == ''">$(VersionPrefix)</PythonVersion>
+    <PythonVersion Condition="'$(BuildNumber)' != ''">$(VersionPrefix)$(PythonPreReleaseTextPart)$(BuildNumber)</PythonVersion>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == 'net45'" >
+    <ItemGroup>
+      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.dll" />
+      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.pdb" />
+    </ItemGroup>
+    <MakeDir Directories="..\Cmdty.Curves.Python\curves\lib" />
+    <Copy SourceFiles="@(FilesToCopyForPython)" DestinationFolder="..\Cmdty.Curves.Python\curves\lib" OverwriteReadOnlyFiles="true"/>
+    <WriteLinesToFile File="..\Cmdty.Curves.Python\curves\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true"/>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
+    <PackageReference Include="MathNet.Numerics.Signed" Version="4.8.1">
+      <NoWarn>NU1605</NoWarn>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cmdty.TimePeriodValueTypes\Cmdty.TimePeriodValueTypes.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Cmdty.TimeSeries\Cmdty.TimeSeries.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

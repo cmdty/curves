@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
+    <PackageId>Cmdty.TimePeriodValueTypes</PackageId>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Description>A lightweight library of structs for representing and manipulating time periods such as hours, days, months, quarters</Description>
+    <PackageTags>date;time;calendar;timeperiod</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="TimePeriod.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="QuarterHour.Generated.cs">
+      <DependentUpon>QuarterHour.cs</DependentUpon>
+    </Compile>
+    <Compile Update="HalfHour.Generated.cs">
+      <DependentUpon>HalfHour.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Hour.Generated.cs">
+      <DependentUpon>Hour.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Day.Generated.cs">
+      <DependentUpon>Day.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Month.Generated.cs">
+      <DependentUpon>Month.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Quarter.Generated.cs">
+      <DependentUpon>Quarter.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Season.Generated.cs">
+      <DependentUpon>Season.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+
+</Project>
