@@ -52,8 +52,8 @@ steps:
       artifactFeeds: 'Cmdty'
     displayName: 'Twine Authenticate'
 
-  - script: 'twine upload -r Cmdty --config-file $(PYPIRC_PATH) src/Cmdty.Curves.Python/dist/**'
-    displayName: 'Upload Python package to Azure Artifacts Cmdty Feed'
+#  - script: 'twine upload -r Cmdty --config-file $(PYPIRC_PATH) src/Cmdty.Curves.Python/dist/**'
+#    displayName: 'Upload Python package to Azure Artifacts Cmdty Feed'
 
   - task: CopyFiles@2
     displayName: Copy Python package to Artifact Staging Directory
