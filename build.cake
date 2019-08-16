@@ -83,7 +83,7 @@ Task("Add-NuGetSource")
 			// Add the authenticated feed source
 			NuGetAddSource(
 				"Cmdty",
-				"https://fowlerjake.pkgs.visualstudio.com/_packaging/Cmdty/nuget/v3/index.json",
+				"https://pkgs.dev.azure.com/cmdty/_packaging/cmdty/nuget/v3/index.json",
 				new NuGetSourcesSettings
 				{
 					UserName = "VSTS",
@@ -250,9 +250,3 @@ Task("CI")
     .IsDependentOn("Pack-Python");
 
 RunTarget(target);
-// TODO:
-// Run coverage as task?
-// Test what happens when tests fail: C# and Python
-// Only create unit test file when run on server?
-// Other build script parameters
-// Error message in Install-PythonDependencies saying script needs to be run as admin
