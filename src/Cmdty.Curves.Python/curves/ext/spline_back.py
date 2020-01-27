@@ -34,7 +34,7 @@ def create_2h_bottom_right_submatrix(contract, curve_start, time_func):
 
 
 def build(contracts, weighting, mult_adjust_func, add_adjust_func, 
-          time_func, front_first_derivative = None, back_first_derivative = None):
+          time_func, front_first_derivative=None, back_first_derivative=None):
     #TODO: contracts = list(contract objects), weighting = Func<T, dbl>
     if contracts.count < 2:
         raise ValueError("contracts must have at least two elements", nameof(contracts))
@@ -44,8 +44,15 @@ def build(contracts, weighting, mult_adjust_func, add_adjust_func,
     timeToPolynomialBoundaries = []
 
     #TODO: optionally do/don't allow gaps in contracts
-    
+    for i in range(len(contracts) - 1):
+        contractEnd = contracts[i].End
+        nextContractStart = contracts[i + 1].Start
 
+        if contractEnd >= nextContractStart:
+            raise Exception('Contracts are overlapping')
+        timeToPolynomialBoundaries.append(time_func(curveStartPeriod, nextContractStart))
+
+        #if contractEnd
 
     return ""
 
