@@ -1,4 +1,4 @@
-pythonnet==2.5.1
+pythonnet==2.5.2
 setuptools==40.8.0
 wheel==0.33.1
-pandas==1.0.3
+pandas>=1.0.3
