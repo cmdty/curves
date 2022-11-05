@@ -24,4 +24,5 @@
 from curves.bootstrap import bootstrap_contracts
 from curves.spline import max_smooth_interp
 from curves._common import FREQ_TO_PERIOD_TYPE
+from curves.shape_preserving_spline import shape_preserving_average_spline
 from curves.__version__ import __version__
