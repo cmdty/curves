@@ -75,11 +75,18 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
         pchip = interpolate.PchipInterpolator(times_to_mid, y_points, extrapolate=True)
         sum_squared_error = 0.0
         for (idx2, (contract_periods2, contract_price)) in enumerate(standardised_contracts):
-            sum_pchip_contract_price = 0.0
+            sum_weighted_pchip_contract_price = 0.0
+            sum_weight = 0.0
             for contract_period in contract_periods2:
+                weight = average_weight(contract_period)
+                add_adjust = add_season_adjust(contract_period)
+                mult_adjust = mult_season_adjust(contract_period)
+                sum_weight += weight
                 time_to_contract_date = time_func(base_period, contract_period)
-                sum_pchip_contract_price += pchip(time_to_contract_date)
-            avg_pchip_contract_price = sum_pchip_contract_price / len(contract_periods2)
+                interpolated_price = pchip(time_to_contract_date)
+                seasonally_adjusted_interpolated_price = (interpolated_price + add_adjust) * mult_adjust
+                sum_weighted_pchip_contract_price += seasonally_adjusted_interpolated_price * weight
+            avg_pchip_contract_price = sum_weighted_pchip_contract_price / sum_weight
             sum_squared_error += (avg_pchip_contract_price - contract_price) ** 2
         return sum_squared_error
 
