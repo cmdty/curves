@@ -39,15 +39,12 @@ class TestShapePreservingSpline(unittest.TestCase):
 
         self.assertNotEqual(0, len(shape_preserved))
 
-        print(shape_preserved)
+        for start, end, price in contracts:
+            averaged_price = shape_preserved[start:end].mean()
 
         for start, end, price in contracts:
             averaged_price = shape_preserved[start:end].mean()
-            print(averaged_price)
-
-        for start, end, price in contracts:
-            averaged_price = shape_preserved[start:end].mean()
-            self.assertAlmostEqual(averaged_price, price, delta=1E-8)
+            self.assertAlmostEqual(averaged_price, price, delta=1E-5)
 
     def test_shape_preserving_spline_averages_back_to_inputs_2(self):
         contracts = [
@@ -64,13 +61,9 @@ class TestShapePreservingSpline(unittest.TestCase):
 
         self.assertNotEqual(0, len(shape_preserved))
 
-        print('shape_preserved')
-        print(shape_preserved)
+        for start, end, price in contracts:
+            averaged_price = shape_preserved[start:end].mean()
 
         for start, end, price in contracts:
             averaged_price = shape_preserved[start:end].mean()
-            print(averaged_price)
-
-        for start, end, price in contracts:
-            averaged_price = shape_preserved[start:end].mean()
-            self.assertAlmostEqual(averaged_price, price, delta=1E-6)
+            self.assertAlmostEqual(averaged_price, price, delta=1E-5)

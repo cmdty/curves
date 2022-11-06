@@ -34,15 +34,18 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
                                     mult_season_adjust: Optional[Callable[[pd.Period], float]] = None,
                                     add_season_adjust: Optional[Callable[[pd.Period], float]] = None,
                                     average_weight: Optional[Callable[[pd.Period], float]] = None,
-                                    time_func: Optional[Callable[[pd.Period, pd.Period], float]] = None
+                                    time_func: Optional[Callable[[pd.Period, pd.Period], float]] = None,
+                                    optimize_method: Optional[str] = None,
+                                    optimize_tol: Optional[float] = None,
+                                    optimize_options: Optional[dict] = None
                                     ) -> pd.Series:
     num_contracts = len(contracts)
     if num_contracts == 0:
         raise ValueError('Contracts has no elements.')
 
-    mult_season_adjust = lambda p: 1.0 if mult_season_adjust is None else mult_season_adjust
-    add_season_adjust = lambda p: 0.0 if add_season_adjust is None else add_season_adjust
-    average_weight = lambda p: 1.0 if average_weight is None else average_weight
+    mult_season_adjust = _one if mult_season_adjust is None else mult_season_adjust
+    add_season_adjust = _zero if add_season_adjust is None else add_season_adjust
+    average_weight = _one if average_weight is None else average_weight
     time_func = _default_time_func if time_func is None else time_func
 
     standardised_contracts = []  # Contract as tuples of (PeriodIndex, price)
@@ -65,7 +68,7 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
     for idx, (contract_periods, price) in enumerate(standardised_contracts):
         start = contract_periods[0]
         end = contract_periods[-1]
-        times_to_mid[idx] = (time_func(base_period, start) + time_func(base_period, end))/2.0
+        times_to_mid[idx] = (time_func(base_period, start) + time_func(base_period, end)) / 2.0
         guess_y_points[idx] = price
 
     def forward_curve_error(y_points):
@@ -80,12 +83,11 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
             sum_squared_error += (avg_pchip_contract_price - contract_price) ** 2
         return sum_squared_error
 
-    optimize_results = optimize.minimize(forward_curve_error, guess_y_points, method='CG', tol=0.0000001)
-    #                                         method='powell', options={'ftol': 0.000000001})  # TODO another optimiser might be better
+    optimize_results = optimize.minimize(forward_curve_error, guess_y_points, tol=optimize_tol,
+                                         method=optimize_method, options=optimize_options)
     if not optimize_results.success:
         raise ValueError('Optimisation not successful ' + optimize_results.message)
 
-    print(optimize_results)
     best_pchip = interpolate.PchipInterpolator(times_to_mid, optimize_results.x, extrapolate=True)
     first_period = standardised_contracts[0][0][0]
     last_period = standardised_contracts[-1][0][-1]
@@ -102,4 +104,12 @@ def _default_time_func(period1, period2):
     time_stamp1 = period1.start_time
     time_stamp2 = period2.start_time
     time_delta = time_stamp2 - time_stamp1
-    return time_delta.total_seconds()/60.0/60.0/24.0/365.0  # Convert to years with ACT/365
+    return time_delta.total_seconds() / 60.0 / 60.0 / 24.0 / 365.0  # Convert to years with ACT/365
+
+
+def _zero(period):
+    return 0.0
+
+
+def _one(period):
+    return 1.0
