@@ -35,7 +35,7 @@ class TestShapePreservingSpline(unittest.TestCase):
             (date(2019, 1, 8), date(2019, 1, 31), 24.66)
         ]
 
-        shape_preserved = shape_preserving_average_spline(contracts)
+        shape_preserved = shape_preserving_average_spline(contracts, freq='D')
 
         self.assertNotEqual(0, len(shape_preserved))
 
@@ -60,7 +60,7 @@ class TestShapePreservingSpline(unittest.TestCase):
             (date(2019, 12, 1), date(2019, 12, 31), 27.66),
         ]
 
-        shape_preserved = shape_preserving_average_spline(contracts)
+        shape_preserved = shape_preserving_average_spline(contracts, freq='D')
 
         self.assertNotEqual(0, len(shape_preserved))
 

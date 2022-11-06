@@ -120,6 +120,21 @@ def contract_period(input_period, freq, time_period_type):
     return (start_net, end_net)
 
 
+def contract_pandas_periods(input_period, freq):
+
+    if isinstance(input_period, tuple):
+        start = pd.Period(input_period[0], freq=freq)
+        end = pd.Period(input_period[1], freq=freq)
+    else:
+        if isinstance(input_period, pd.Period):
+            start = input_period.asfreq(freq, 's')
+            end = _last_period(input_period, freq)
+        else:
+            start = pd.Period(input_period, freq=freq)
+            end = pd.Period(input_period, freq=freq)
+    return start, end
+
+
 def _last_period(period, freq):
     """Find the last pandas Period instance of a specific frequency within a Period instance"""
 
