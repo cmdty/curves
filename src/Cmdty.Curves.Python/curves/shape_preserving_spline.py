@@ -38,6 +38,60 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
                                     optimize_tol: Optional[float] = None,
                                     optimize_options: Optional[dict] = None
                                     ) -> pd.Series:
+    """
+    Quick hack for an averaging shape-preserving spline algorithm. Very slow, inaccurate and potentially unstable.
+    In the future a proper implementation will be released which won't have these issues. Use at your own risk!
+
+    Generally this function is used to increase the granularity of a curve from a collection of forward prices for non-overlapping
+    delivery periods. The resulting curve will be smooth, and of homogenous granularity. For example a smooth monthly curve can be
+    created from a collection of monthly, quarterly and season granularity forward market prices. If input contracts have overlapping
+    delivery periods the function bootstrap_contracts (also in this package) can be used to remove the overlaps before a call to
+    this function.
+
+    Args:
+        contracts (pd.Series or iterable): The input contracts to be interpolated.
+            If iterable of tuples, with each tuple describing a forward delivery period and price in one
+            of the following forms:
+                ([period], [price])
+                ([period start], [period end], [price])
+                (([period start], [period end]), [price])
+            Where:
+                [price] is a float, being the price of commodity delivered over the delivery period.
+                [period] specifies the delivery period.
+                [period start] specifies the start of the contract delivery period.
+                [period end] specifies the inclusive end of the contract delivery period.
+            [period], [period start] and [period end] can be any of the following types:
+                pandas.Period
+                date
+                datetime
+        freq (str): Describes the granularity of curve being constructed using pandas Offset Alias notation.
+            Must be a key to the dict variable curves.FREQ_TO_PERIOD_TYPE.
+        mult_season_adjust (callable, optional): Callable with single parameter of type pandas.Period and return type float.
+            If this argument is supplied, the value from the underlying spline funtion is multiplied by the result of mult_season_adjust,
+            evaluated for each index period in the resulting curve.
+        add_season_adjust (callable, optional): Callable with single parameter of type pandas.Period and return type float.
+            If this argument is supplied, the value from the underlying spline funtion has the result of add_season_adjust,
+            evaluated for each index period, added to it to derive each price in the resulting curve.
+        average_weight (callable, optional): Mapping from pandas.Period type to float which describes the weighting
+            that each forward period contributes to a price for delivery which spans multiple periods. The
+            pandas. Period parameter will have freq equal to the freq parameter. An example of such weighting is
+            a monthly curve (freq='M') of a commodity which delivers on every calendar day. In this example average_weight would be
+            a callable which returns the number of calendar days in the month, e.g.:
+                lambda p: p.asfreq('D', 'e').day
+            Defaults to None, in which case each period has equal weighting.
+        time_func (callable, optional): Callable accepting two parameters, both of type pandas.Period, with return type of float.
+            This parameter specifies how the small-t variable of the spline polynomials is calculated from the index periods of the curve
+            being constructed. Small-t for each curve point will be calculated as time_func evaluated with the first period at the front of
+            the derived curve as the first argument, and the period for the specific curve point as the second argument. If this parameter
+            is omitted time_func will default to the number of periods difference between the two parameter periods.
+        optimize_method (string, optional): Value passed to scipy.optimize.minimize function method argument when fitting the curve.
+        optimize_tol (float, optional): Value passed to scipy.optimize.minimize function tol argument when fitting the curve.
+        optimize_options (dict, optional): Value passed to scipy.optimize.minimize function options argument when fitting the curve.
+
+    Returns:
+        pandas.Series: Series with index of type PeriodIndex and freqstr equal to the freq parameter. This Series will
+            represent a smooth contiguous curve with values consistent with prices within the contracts parameter.
+    """
     num_contracts = len(contracts)
     if num_contracts == 0:
         raise ValueError('Contracts has no elements.')
