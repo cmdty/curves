@@ -24,7 +24,6 @@
 import numpy as np
 import pandas as pd
 from scipy import interpolate, optimize
-from datetime import timedelta, date
 from typing import Optional, Callable, Union
 from curves._common import _last_period, ContractsType, deconstruct_contract, contract_pandas_periods
 
@@ -103,7 +102,9 @@ def shape_preserving_average_spline(contracts: Union[ContractsType, pd.Series],
     for period in result_index:
         time_to_period = time_func(base_period, period)
         smooth_price = best_pchip(time_to_period)
-        smooth_curve[period] = smooth_price
+        add_adjust = add_season_adjust(period)
+        mult_adjust = mult_season_adjust(period)
+        smooth_curve[period] = (smooth_price + add_adjust) * mult_adjust
     return smooth_curve
 
 
