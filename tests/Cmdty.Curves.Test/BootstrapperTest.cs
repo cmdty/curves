@@ -537,6 +537,29 @@ namespace Cmdty.Curves.Test
             var outputPriceSpread = janPrice - febPrice;
             Assert.AreEqual(inputPriceSpread, outputPriceSpread, Tolerance);
         }
+
+        [Test]
+        public void Bootstrap_AllInputsSamePrice_OutputsAllSamePrice()
+        {
+            const double flatPrice = 10.0;
+            (DoubleCurve<Day> piecewiseFlatCurve, IReadOnlyList<Contract<Day>> bootstrappedContracts) = new Bootstrapper<Day>()
+                .AddContract(new Day(2020, 8, 24), new Day(2020, 8, 30), flatPrice)
+                .AddContract(new Day(2020, 8, 31), new Day(2020, 9, 6), flatPrice)
+                .AddContract(new Day(2020, 9, 1), new Day(2020, 9, 30), flatPrice)
+                .Bootstrap();
+
+            foreach(Day day in piecewiseFlatCurve.Indices)
+            {
+                double piecewiseFlatPrice = piecewiseFlatCurve[day];
+                Assert.AreEqual(flatPrice, piecewiseFlatPrice, Tolerance);
+            }
+
+            foreach(Contract<Day> contract in bootstrappedContracts)
+            {
+                Assert.AreEqual(flatPrice, contract.Price, Tolerance);
+            }
+
+        }
         
     }
 }
