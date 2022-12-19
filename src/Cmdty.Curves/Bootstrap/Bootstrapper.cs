@@ -230,17 +230,18 @@ namespace Cmdty.Curves
             }
 
             Vector<double> targetVectorMinusLeastSquares = targetVector - leastSquaresSolution;
-            Matrix<double> nullspaceBasis = CalcNullspaceBasis(svd);
+            Vector<double>[] nullspaceBasis = svd.VT.EnumerateRows(svd.Rank, svd.VT.RowCount - svd.Rank).ToArray();
 
             Vector<double> adjustedSolution;
-            if (nullspaceBasis == null) // Nullspace has zero dimensions
+            if (nullspaceBasis.Length == 0)
             {
                 adjustedSolution = leastSquaresSolution;
             }
             else
             {
-                Vector<double> nullspaceBasisWeights = nullspaceBasis.Multiply(targetVectorMinusLeastSquares);
-                Vector<double> solutionAdjustment = nullspaceBasis.Transpose().Multiply(nullspaceBasisWeights);
+                Matrix<double> nullspaceBaseMatrix = Matrix<double>.Build.DenseOfColumnVectors(nullspaceBasis);
+                Vector<double> nullspaceBasisWeights = nullspaceBaseMatrix.TransposeThisAndMultiply(targetVectorMinusLeastSquares);
+                Vector<double> solutionAdjustment = nullspaceBaseMatrix.Multiply(nullspaceBasisWeights);
                 adjustedSolution = leastSquaresSolution + solutionAdjustment;
             }
 
@@ -304,34 +305,6 @@ namespace Cmdty.Curves
 
             var curve = new DoubleCurve<T>(curvePeriods, curvePrices, weighting);
             return new BootstrapResults<T>(curve, bootstrappedContracts);
-        }
-
-        /// <summary>
-        /// Basis vectors are rows of returned matrix.
-        /// </summary>
-        private static Matrix<double> CalcNullspaceBasis(Svd<double> svd)
-        {
-            // TODO see if code can be copied from matrix.Kernel();
-
-            // TODO understand this code which was copied from Math.Net source code \mathnet-numerics\src\Numerics\LinearAlgebra\Double\Factorization\Svd.cs, line 65
-            double tolerance = Precision.EpsilonOf(svd.S.Maximum()) * Math.Max(svd.U.RowCount, svd.VT.RowCount);
-
-            int nullspaceStartIndex = 0;
-            for (int i = 0; i < svd.S.Count; i++)
-            {
-                nullspaceStartIndex = i;
-                if (svd.S[i] <= tolerance)
-                    break;
-            }
-            // TODO handle case of dimension of nullspace being zero better than this
-            nullspaceStartIndex++; // TODO: important this is a temp hack, sort this out!
-            int nullspaceDimensions = svd.VT.RowCount - nullspaceStartIndex;
-
-            Matrix<double> nullspaceBasis = null; // TODO try to avoid using null
-            if (nullspaceDimensions > 0)
-                nullspaceBasis = svd.VT.SubMatrix(nullspaceStartIndex, nullspaceDimensions, 0, svd.VT.ColumnCount);
-
-            return nullspaceBasis;
         }
 
         private static Vector<double> CalculateTargetVector(List<Contract<T>> contracts, T minTimePeriod, int numTimePeriods)
