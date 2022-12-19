@@ -560,6 +560,8 @@ namespace Cmdty.Curves.Test
             }
 
         }
-        
+
+        // TODO add some tests on the target bootstrapped curve
+
     }
 }

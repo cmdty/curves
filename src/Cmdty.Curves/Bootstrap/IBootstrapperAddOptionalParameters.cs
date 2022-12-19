@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 
 namespace Cmdty.Curves
 {
@@ -35,7 +36,7 @@ namespace Cmdty.Curves
         IBootstrapperAddOptionalParameters<T> AddShaping(Shaping<T> shaping);
         IBootstrapperAddOptionalParameters<T> AddShapings(IEnumerable<Shaping<T>> shapings);
         IBootstrapperAddOptionalParameters<T> WithAverageWeighting(Func<T, double> weighting);
-        IBootstrapperAddOptionalParameters<T> WithTargetBootstrappedCurve(DoubleCurve<T> targetBootstrappedCurve);
+        IBootstrapperAddOptionalParameters<T> WithTargetBootstrappedCurve(DoubleTimeSeries<T> targetBootstrappedCurve);
         IBootstrapperAddOptionalParameters<T> AllowRedundancy();
         BootstrapResults<T> Bootstrap();
     }

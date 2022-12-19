@@ -28,8 +28,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Cmdty.TimePeriodValueTypes;
+using Cmdty.TimeSeries;
 using JetBrains.Annotations;
-using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Factorization;
 
@@ -40,7 +40,7 @@ namespace Cmdty.Curves
     {
         private readonly List<Contract<T>> _contracts;
         private readonly List<Shaping<T>> _shapings;
-        private  DoubleCurve<T> _targetBootstrappedCurve;
+        private DoubleTimeSeries<T> _targetBootstrappedCurve;
         private Func<T, double> _weighting;
         private bool _allowRedundancy;
 
@@ -84,9 +84,11 @@ namespace Cmdty.Curves
             return this;
         }
 
-        IBootstrapperAddOptionalParameters<T> IBootstrapperAddOptionalParameters<T>.WithTargetBootstrappedCurve(DoubleCurve<T> targetBootstrappedCurve)
+        IBootstrapperAddOptionalParameters<T> IBootstrapperAddOptionalParameters<T>.WithTargetBootstrappedCurve(DoubleTimeSeries<T> targetBootstrappedCurve)
         {
             _targetBootstrappedCurve = targetBootstrappedCurve ?? throw new ArgumentNullException(nameof(targetBootstrappedCurve));
+            if (targetBootstrappedCurve.IsEmpty)
+                throw new ArgumentException("Target bootstrapped curve cannot be empty.", nameof(targetBootstrappedCurve));
             return this;
         }
 
@@ -104,7 +106,7 @@ namespace Cmdty.Curves
 
         // TODO include discount factors
         private static BootstrapResults<T> Calculate([NotNull] List<Contract<T>> contracts, [NotNull] Func<T, double> weighting,
-            [NotNull] List<Shaping<T>> shapings, DoubleCurve<T> targetBootstrappedCurve, bool allowRedundancy = false)
+            [NotNull] List<Shaping<T>> shapings, TimeSeries.DoubleTimeSeries<T> targetBootstrappedCurve, bool allowRedundancy = false)
         {
             if (contracts == null) throw new ArgumentNullException(nameof(contracts));
             if (weighting == null) throw new ArgumentNullException(nameof(weighting));
@@ -210,7 +212,6 @@ namespace Cmdty.Curves
 
 
             // Calculate least squares solution
-            // TODO does Math.Net offer a double tolerance parameter like NMath?
             Svd<double> svd = matrix.Svd(true /*compute vectors*/);
 
             if (!allowRedundancy)
@@ -221,12 +222,16 @@ namespace Cmdty.Curves
 
             Vector<double> targetVector;
             if (targetBootstrappedCurve == null)
-            {
                 targetVector = CalculateTargetVector(contracts, minTimePeriod, numTimePeriods);
-            }
             else
             {
-                throw new NotImplementedException();
+                if (targetBootstrappedCurve.Start.OffsetFrom(minTimePeriod) > 0)
+                    throw new ApplicationException($"Target bootstrapped curve starts at {targetBootstrappedCurve.Start} which is too late, as is after {minTimePeriod}.");
+                if (targetBootstrappedCurve.End.OffsetFrom(maxTimePeriod) < 0)
+                    throw new ApplicationException($"Target bootstrapped curve ends at {targetBootstrappedCurve.End} which is too early, as it is after the end period {maxTimePeriod}.");
+                targetVector = Vector<double>.Build.Dense(numTimePeriods);
+                for (int i = 0; i < numTimePeriods; i++)
+                    targetVector[i] = targetBootstrappedCurve[minTimePeriod.Offset(i)];
             }
 
             Vector<double> targetVectorMinusLeastSquares = targetVector - leastSquaresSolution;
@@ -234,9 +239,7 @@ namespace Cmdty.Curves
 
             Vector<double> adjustedSolution;
             if (nullspaceBasis.Length == 0)
-            {
                 adjustedSolution = leastSquaresSolution;
-            }
             else
             {
                 Matrix<double> nullspaceBaseMatrix = Matrix<double>.Build.DenseOfColumnVectors(nullspaceBasis);
