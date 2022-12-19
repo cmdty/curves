@@ -29,7 +29,9 @@ using System.ComponentModel;
 using System.Linq;
 using Cmdty.TimePeriodValueTypes;
 using JetBrains.Annotations;
+using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Factorization;
 
 namespace Cmdty.Curves
 {
@@ -38,6 +40,7 @@ namespace Cmdty.Curves
     {
         private readonly List<Contract<T>> _contracts;
         private readonly List<Shaping<T>> _shapings;
+        private  DoubleCurve<T> _targetBootstrappedCurve;
         private Func<T, double> _weighting;
         private bool _allowRedundancy;
 
@@ -81,6 +84,12 @@ namespace Cmdty.Curves
             return this;
         }
 
+        IBootstrapperAddOptionalParameters<T> IBootstrapperAddOptionalParameters<T>.WithTargetBootstrappedCurve(DoubleCurve<T> targetBootstrappedCurve)
+        {
+            _targetBootstrappedCurve = targetBootstrappedCurve ?? throw new ArgumentNullException(nameof(targetBootstrappedCurve));
+            return this;
+        }
+
         IBootstrapperAddOptionalParameters<T> IBootstrapperAddOptionalParameters<T>.AllowRedundancy()
         {
             _allowRedundancy = true;
@@ -90,12 +99,12 @@ namespace Cmdty.Curves
         BootstrapResults<T> IBootstrapperAddOptionalParameters<T>.Bootstrap()
         {
             return Calculate(_contracts, 
-                _weighting ?? (timePeriod => (timePeriod.End - timePeriod.Start).TotalMinutes), _shapings, _allowRedundancy);
+                _weighting ?? (timePeriod => (timePeriod.End - timePeriod.Start).TotalMinutes), _shapings, _targetBootstrappedCurve, _allowRedundancy);
         }
 
         // TODO include discount factors
         private static BootstrapResults<T> Calculate([NotNull] List<Contract<T>> contracts, [NotNull] Func<T, double> weighting,
-            [NotNull] List<Shaping<T>> shapings, bool allowRedundancy = false)
+            [NotNull] List<Shaping<T>> shapings, DoubleCurve<T> targetBootstrappedCurve, bool allowRedundancy = false)
         {
             if (contracts == null) throw new ArgumentNullException(nameof(contracts));
             if (weighting == null) throw new ArgumentNullException(nameof(weighting));
@@ -199,24 +208,44 @@ namespace Cmdty.Curves
                 }
             }
 
-            if (!allowRedundancy)
-            {
-                var matrixRank = matrix.Rank();
-                if (matrixRank < matrix.RowCount)
-                {
-                    throw new ArgumentException("Redundant contracts and shapings are present");
-                }
-            }
 
             // Calculate least squares solution
-            // TODO use alternative decomposition if full-rank http://www.imagingshop.com/linear-and-nonlinear-least-squares-with-math-net/
-            // TODO does Math.Net offer a double tolerance parameter like NMath
-            Vector<double> leastSquaresSolution = matrix.Svd(true).Solve(vector);
+            // TODO does Math.Net offer a double tolerance parameter like NMath?
+            Svd<double> svd = matrix.Svd(true /*compute vectors*/);
+
+            if (!allowRedundancy)
+                if (svd.Rank < matrix.RowCount)
+                    throw new ArgumentException("Redundant contracts and shapings are present");
+
+            Vector<double> leastSquaresSolution = svd.Solve(vector);
+
+            Vector<double> targetVector;
+            if (targetBootstrappedCurve == null)
+            {
+                targetVector = CalculateTargetVector(contracts, minTimePeriod, numTimePeriods);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            Vector<double> targetVectorMinusLeastSquares = targetVector - leastSquaresSolution;
+            Matrix<double> nullspaceBasis = CalcNullspaceBasis(svd);
+
+            Vector<double> adjustedSolution;
+            if (nullspaceBasis == null) // Nullspace has zero dimensions
+            {
+                adjustedSolution = leastSquaresSolution;
+            }
+            else
+            {
+                Vector<double> nullspaceBasisWeights = nullspaceBasis.Multiply(targetVectorMinusLeastSquares);
+                Vector<double> solutionAdjustment = nullspaceBasis.Transpose().Multiply(nullspaceBasisWeights);
+                adjustedSolution = leastSquaresSolution + solutionAdjustment;
+            }
 
             var curvePeriods = new List<T>(leastSquaresSolution.Count);
             var curvePrices = new List<double>(leastSquaresSolution.Count);
-
-            // TODO pass raw results into BootstrapResults and have the processed result lazy calculated on access
 
             var bootstrappedContracts = new List<Contract<T>>();
 
@@ -240,7 +269,7 @@ namespace Cmdty.Curves
 
                     // Calculate weighted average price
                     // Add to bootstrappedContracts
-                    double price = WeightedAveragePrice(contractStart, contractEnd, minTimePeriod, leastSquaresSolution, weighting);
+                    double price = WeightedAveragePrice(contractStart, contractEnd, minTimePeriod, adjustedSolution, weighting);
                     bootstrappedContracts.Add(new Contract<T>(contractStart, contractEnd, price));
 
                     foreach (var period in contractStart.EnumerateTo(contractEnd))
@@ -275,6 +304,57 @@ namespace Cmdty.Curves
 
             var curve = new DoubleCurve<T>(curvePeriods, curvePrices, weighting);
             return new BootstrapResults<T>(curve, bootstrappedContracts);
+        }
+
+        /// <summary>
+        /// Basis vectors are rows of returned matrix.
+        /// </summary>
+        private static Matrix<double> CalcNullspaceBasis(Svd<double> svd)
+        {
+            // TODO see if code can be copied from matrix.Kernel();
+
+            // TODO understand this code which was copied from Math.Net source code \mathnet-numerics\src\Numerics\LinearAlgebra\Double\Factorization\Svd.cs, line 65
+            double tolerance = Precision.EpsilonOf(svd.S.Maximum()) * Math.Max(svd.U.RowCount, svd.VT.RowCount);
+
+            int nullspaceStartIndex = 0;
+            for (int i = 0; i < svd.S.Count; i++)
+            {
+                nullspaceStartIndex = i;
+                if (svd.S[i] <= tolerance)
+                    break;
+            }
+            // TODO handle case of dimension of nullspace being zero better than this
+            nullspaceStartIndex++; // TODO: important this is a temp hack, sort this out!
+            int nullspaceDimensions = svd.VT.RowCount - nullspaceStartIndex;
+
+            Matrix<double> nullspaceBasis = null; // TODO try to avoid using null
+            if (nullspaceDimensions > 0)
+                nullspaceBasis = svd.VT.SubMatrix(nullspaceStartIndex, nullspaceDimensions, 0, svd.VT.ColumnCount);
+
+            return nullspaceBasis;
+        }
+
+        private static Vector<double> CalculateTargetVector(List<Contract<T>> contracts, T minTimePeriod, int numTimePeriods)
+        {
+            var targetVector = Vector<double>.Build.Dense(numTimePeriods);
+
+            for (int i = 0; i < numTimePeriods; i++)
+            {
+                T timePeriod = minTimePeriod.Offset(i);
+                // TODO more efficient algorithms for below
+                var contractsSpanningPeriod = contracts
+                            .Where(contract => contract.Start.CompareTo(timePeriod) <= 0 && contract.End.CompareTo(timePeriod) >= 0)
+                            .ToArray();   
+                if (contractsSpanningPeriod.Length > 0)
+                {
+                    // Find the minimum length contracts
+                    int minContractLength = contracts.Select(contract => contract.End.OffsetFrom(contract.Start)).Min();
+                    Contract<T>[] minLengthContracts = contracts.Where(contract => contract.End.OffsetFrom(contract.Start) == minContractLength).ToArray();
+                    Contract<T> firstMinLengthContract = minLengthContracts.OrderBy(contract => contract.Start).First();
+                    targetVector[i] = firstMinLengthContract.Price;
+                }
+            }
+            return targetVector;
         }
 
         private static double WeightedAveragePrice(T start, T end, T minOutputPeriod, Vector<double> outputCurve, Func<T, double> weighting)

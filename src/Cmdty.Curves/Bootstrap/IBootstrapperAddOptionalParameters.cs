@@ -35,6 +35,7 @@ namespace Cmdty.Curves
         IBootstrapperAddOptionalParameters<T> AddShaping(Shaping<T> shaping);
         IBootstrapperAddOptionalParameters<T> AddShapings(IEnumerable<Shaping<T>> shapings);
         IBootstrapperAddOptionalParameters<T> WithAverageWeighting(Func<T, double> weighting);
+        IBootstrapperAddOptionalParameters<T> WithTargetBootstrappedCurve(DoubleCurve<T> targetBootstrappedCurve);
         IBootstrapperAddOptionalParameters<T> AllowRedundancy();
         BootstrapResults<T> Bootstrap();
     }
