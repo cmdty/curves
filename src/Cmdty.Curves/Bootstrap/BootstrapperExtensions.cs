@@ -34,6 +34,20 @@ namespace Cmdty.Curves
     public static class BootstrapperExtensions
     {
 
+        public static IBootstrapperAddOptionalParameters<T> AddPiecewiseBlocks<T>([NotNull] this IBootstrapperAddOptionalParameters<T> bootstrapper,
+                                    [NotNull] IEnumerable<(T Start, T End)> piecewiseBlocks) // TODO use record type for piecewiseBlocks on C# upgrade
+            where T : ITimePeriod<T>
+        {
+            if (bootstrapper == null) throw new ArgumentNullException(nameof(bootstrapper));
+            if (piecewiseBlocks is null)
+                throw new ArgumentNullException(nameof(piecewiseBlocks));
+
+            foreach ((T start, T end) in piecewiseBlocks)
+                bootstrapper.AddPiecewiseBlock(start, end);
+
+            return bootstrapper;
+        }
+
         public static IBootstrapperAddOptionalParameters<T> AddContracts<T>([NotNull] this IBootstrapper<T> bootstrapper,
                                             [NotNull] IEnumerable<Contract<T>> contracts)
             where T : ITimePeriod<T>

@@ -52,12 +52,16 @@ ShapingTypes = Iterable[
               Tuple[datetime, datetime], float]]]
 
 
+PiecewiseBlockType = Iterable[Union[Tuple[date, date], Tuple[datetime, datetime], Tuple[pd.Period, pd.Period]]]
+
+
 def bootstrap_contracts(contracts: ContractsType,
                         freq: str,
                         average_weight: Optional[Callable[[pd.Period], float]] = None,
                         shaping_ratios: Optional[ShapingTypes] = None,
                         shaping_spreads: Optional[ShapingTypes] = None,
-                        allow_redundancy: Optional[bool] = False) -> BootstrapResults:
+                        allow_redundancy: Optional[bool] = False,
+                        piecewise_blocks: Optional[PiecewiseBlockType] = None) -> BootstrapResults:
     """
     Bootstraps a collection of commodity forward/swap/futures prices by removing the overlapping periods and optionally applies shaping.
 
@@ -112,6 +116,20 @@ def bootstrap_contracts(contracts: ContractsType,
         allow_redundancy (bool, optional): Flag indicating whether the input contracts are allowed to have redundancy
             without an exception being thrown. An example of redundancy is contracts including prices for
             quarter and also all three constituent months of the same quarter. Defaults to False.
+        piecewise_blocks (iterable, optional): iterable of 2-tuples, with each tuple describing a range of curve points
+            which should be treated in the results as a single contract, i.e. with flat price within this, and one item
+            in returned bootstrapped_contracts. This overrides the default logic which uses the union of the start and
+            end periods of all contracts, shaping_ratios and shaping_spreads args to determine the boundaries of such
+            blocks.
+            Each 2-tuple is of the form:
+                  ([period start], [period end])
+            Where:
+                [period start] specifies the start of the calculated period which should be treated as a single block.
+                [period end] specifies the inclusive end of the calculated period which should be treated as a single block.
+            [period start] and [period end] will typically be any of the following types:
+                pandas.Period
+                date
+                datetime
 
     Returns:
         (pandas.Series, list of tuple): named tuple with the following elements:
@@ -160,6 +178,11 @@ def bootstrap_contracts(contracts: ContractsType,
     if average_weight is not None:
         transformed_average_weight = transform_time_func(freq, average_weight)
         bootstrapper.WithAverageWeighting(Func[time_period_type, Double](transformed_average_weight))
+
+    if piecewise_blocks is not None:
+        for piecewise_block in piecewise_blocks:
+            start_net, end_net = contract_period(piecewise_block, freq, time_period_type)
+            bootstrapper.AddPiecewiseBlock(start_net, end_net)
 
     dotnet_bootstrap_results = bootstrapper.Bootstrap()
 

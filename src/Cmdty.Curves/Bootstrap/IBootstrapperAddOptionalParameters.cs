@@ -37,6 +37,7 @@ namespace Cmdty.Curves
         IBootstrapperAddOptionalParameters<T> AddShapings(IEnumerable<Shaping<T>> shapings);
         IBootstrapperAddOptionalParameters<T> WithAverageWeighting(Func<T, double> weighting);
         IBootstrapperAddOptionalParameters<T> WithTargetBootstrappedCurve(DoubleTimeSeries<T> targetBootstrappedCurve);
+        IBootstrapperAddOptionalParameters<T> AddPiecewiseBlock(T start, T end);
         IBootstrapperAddOptionalParameters<T> AllowRedundancy();
         BootstrapResults<T> Bootstrap();
     }

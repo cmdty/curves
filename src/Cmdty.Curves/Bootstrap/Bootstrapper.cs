@@ -40,6 +40,7 @@ namespace Cmdty.Curves
     {
         private readonly List<Contract<T>> _contracts;
         private readonly List<Shaping<T>> _shapings;
+        private readonly List<(T Start, T End)> _piecewiseBlocks;
         private DoubleTimeSeries<T> _targetBootstrappedCurve;
         private Func<T, double> _weighting;
         private bool _allowRedundancy;
@@ -48,6 +49,7 @@ namespace Cmdty.Curves
         {
             _contracts = new List<Contract<T>>();
             _shapings = new List<Shaping<T>>();
+            _piecewiseBlocks = new List<(T Start, T End)>();
         }
 
         public IBootstrapperAddOptionalParameters<T> AddContract([NotNull] Contract<T> contract)
@@ -98,15 +100,25 @@ namespace Cmdty.Curves
             return this;
         }
 
+        IBootstrapperAddOptionalParameters<T> IBootstrapperAddOptionalParameters<T>.AddPiecewiseBlock(T start, T end)
+        {
+            if (start.CompareTo(end) > 0)
+                throw new ArgumentException($"Value of start {start}, is after end value of {end}.");
+            _piecewiseBlocks.Add(new (start, end));
+            return this;
+        }
+
         BootstrapResults<T> IBootstrapperAddOptionalParameters<T>.Bootstrap()
         {
             return Calculate(_contracts, 
-                _weighting ?? (timePeriod => (timePeriod.End - timePeriod.Start).TotalMinutes), _shapings, _targetBootstrappedCurve, _allowRedundancy);
+                _weighting ?? (timePeriod => (timePeriod.End - timePeriod.Start).TotalMinutes), _shapings, _targetBootstrappedCurve, 
+                _allowRedundancy, _piecewiseBlocks);
         }
 
         // TODO include discount factors
         private static BootstrapResults<T> Calculate([NotNull] List<Contract<T>> contracts, [NotNull] Func<T, double> weighting,
-            [NotNull] List<Shaping<T>> shapings, TimeSeries.DoubleTimeSeries<T> targetBootstrappedCurve, bool allowRedundancy = false)
+            [NotNull] List<Shaping<T>> shapings, DoubleTimeSeries<T> targetBootstrappedCurve, bool allowRedundancy, 
+            List<(T Start, T End)> piecewiseBlocks)
         {
             if (contracts == null) throw new ArgumentNullException(nameof(contracts));
             if (weighting == null) throw new ArgumentNullException(nameof(weighting));
@@ -127,6 +139,20 @@ namespace Cmdty.Curves
                 .Concat(shapings.Select(shaping => shaping.End1))
                 .Concat(shapings.Select(shaping => shaping.End2))
                 .Max(timePeriod => timePeriod);
+
+            (T Start, T End)[] piecewiseBlocksSorted = piecewiseBlocks.OrderBy(piecewiseBlocks => piecewiseBlocks.Start).ToArray();
+            if (piecewiseBlocksSorted.Length > 0)
+            {
+                for (int i = 0; i < piecewiseBlocksSorted.Length - 1; i++)
+                    if (piecewiseBlocksSorted[i].End.CompareTo(piecewiseBlocksSorted[i + 1].Start) >= 0)
+                        throw new ArgumentException($"Piecewise blocks {piecewiseBlocksSorted[i]} and {piecewiseBlocksSorted[i + 1]} are overlapping.");
+                T minPiecewiseBlockStart = piecewiseBlocksSorted[0].Start;
+                if (minPiecewiseBlockStart.CompareTo(minTimePeriod) < 0)
+                    throw new ApplicationException($"Start of earliest piecewise block {minPiecewiseBlockStart} is before start of curve data {minTimePeriod}.");
+                T maxPiecewiseBlockEnd = piecewiseBlocksSorted[piecewiseBlocksSorted.Length - 1].End;
+                if (maxPiecewiseBlockEnd.CompareTo(maxTimePeriod) > 0)
+                    throw new ApplicationException($"End of latest piecewise block {maxPiecewiseBlockEnd} is after the end of curve data {maxTimePeriod}.");
+            }
 
             var numTimePeriods = maxTimePeriod.OffsetFrom(minTimePeriod) + 1;
 
@@ -248,41 +274,53 @@ namespace Cmdty.Curves
                 adjustedSolution = leastSquaresSolution + solutionAdjustment;
             }
 
+            // Read results off solution
             var curvePeriods = new List<T>(leastSquaresSolution.Count);
             var curvePrices = new List<double>(leastSquaresSolution.Count);
 
             var bootstrappedContracts = new List<Contract<T>>();
 
             // TODO check if only one element?
-            var allOutputPeriods = minTimePeriod.EnumerateTo(maxTimePeriod.Offset(1)).Skip(1).ToList();
+            // TODO why is the code below so strange looking?
+            var allOutputPeriodsOffsetByOne = minTimePeriod.Offset(1).EnumerateTo(maxTimePeriod.Offset(1)).ToArray();
             T contractStart = minTimePeriod;
 
-            for (var i = 0; i < allOutputPeriods.Count; i++)
+            for (var i = 0; i < allOutputPeriodsOffsetByOne.Length; i++)
             {
-                var outputPeriod = allOutputPeriods[i];
-                var inputStartsHere = contracts.Any(contract => contract.Start.Equals(outputPeriod)) ||
+                T outputPeriod = allOutputPeriodsOffsetByOne[i];
+                // TODO make code efficient, first sort etc
+                //bool piecewiseBlockStartsHere
+                (T Start, T End)? piecewiseBlockNullable = piecewiseBlocksSorted.FirstOrDefault(block => block.Start.Equals(outputPeriod));
+                bool insidePiecewiseBlock = false;
+                if (piecewiseBlockNullable != null)
+                    insidePiecewiseBlock = true;
+
+                
+
+                bool contractOrShapingStartsHere = contracts.Any(contract => contract.Start.Equals(outputPeriod)) ||
                         shapings.Any(shaping => shaping.Start1.Equals(outputPeriod) || shaping.Start2.Equals(outputPeriod));
 
-                var inputEndsOneStepBefore = contracts.Any(contract => contract.End.Next().Equals(outputPeriod)) ||
+                bool inputEndsOneStepBefore = contracts.Any(contract => contract.End.Next().Equals(outputPeriod)) ||
                         shapings.Any(shaping => shaping.End1.Next().Equals(outputPeriod) || shaping.End2.Next().Equals(outputPeriod));
 
                 // TODO refactor OR
-                if (inputStartsHere || inputEndsOneStepBefore) // New output period
+                if (contractOrShapingStartsHere || insidePiecewiseBlock || inputEndsOneStepBefore) // New output period
                 {
                     var contractEnd = outputPeriod.Previous();
 
                     // Calculate weighted average price
                     // Add to bootstrappedContracts
-                    double price = WeightedAveragePrice(contractStart, contractEnd, minTimePeriod, adjustedSolution, weighting);
-                    bootstrappedContracts.Add(new Contract<T>(contractStart, contractEnd, price));
+                    double weightedAveragePrice = WeightedAveragePrice(contractStart, contractEnd, minTimePeriod, adjustedSolution, weighting);
+                    bootstrappedContracts.Add(new Contract<T>(contractStart, contractEnd, weightedAveragePrice));
 
                     foreach (var period in contractStart.EnumerateTo(contractEnd))
                     {
                         curvePeriods.Add(period);
-                        curvePrices.Add(price);
+                        curvePrices.Add(weightedAveragePrice);
                     }
 
-                    if (i < allOutputPeriods.Count - 1)
+                    // Handle gaps
+                    if (i < allOutputPeriodsOffsetByOne.Length - 1)
                     {
                         // Set contractStart unless last item of loop
                         if (!IsGapInContractsAndShapings(contracts, shapings, outputPeriod))
@@ -295,7 +333,7 @@ namespace Cmdty.Curves
                             do
                             {
                                 curvePeriods.Add(outputPeriod);
-                                curvePrices.Add(price);
+                                curvePrices.Add(0.0); // Zero price over gaps
                                 i++;
                                 outputPeriod = outputPeriod.Next();
                             } while (IsGapInContractsAndShapings(contracts, shapings, outputPeriod));
