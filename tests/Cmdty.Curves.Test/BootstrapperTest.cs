@@ -575,13 +575,13 @@ namespace Cmdty.Curves.Test
                 Assert.AreEqual(0.0, piecewiseFlatCurve[month]);
         }
 
-        [Test]
-        [Ignore("Not working yet")]
-        public void Bootstrap_PiecewiseBlockAdded_ResultHasBlock()
+        private static ((Day Start, Day End)[] PiecewiseBlock, DoubleCurve<Day> PiecewiseFlatCurve, IReadOnlyList<Contract<Day>> BootstrappedContracts)
+            RunBootstrapWithPiecewiseBlocks()
         {
             var piecewiseBlocks = new (Day Start, Day End)[]
             {
                 ( Start: new Day(2020, 8, 24), End: new Day(2020, 8, 26) ),
+                ( Start: new Day(2020, 8, 31), End: new Day(2020, 9, 1) ),
             };
 
             (DoubleCurve<Day> piecewiseFlatCurve, IReadOnlyList<Contract<Day>> bootstrappedContracts) = new Bootstrapper<Day>()
@@ -590,19 +590,36 @@ namespace Cmdty.Curves.Test
                 .AddContract(new Day(2020, 9, 1), new Day(2020, 9, 30), 85.64)
                 .AddPiecewiseBlocks(piecewiseBlocks)
                 .Bootstrap();
+            return (piecewiseBlocks, piecewiseFlatCurve, bootstrappedContracts);
+        }
 
-            foreach ((Day start, Day end) in piecewiseBlocks)
+        [Test]
+        public void Bootstrap_PiecewiseBlockAdded_PiecewiseFlatCurveIsFlatWithinBlocks()
+        {
+            ((Day Start, Day End)[] piecewiseBlocks, DoubleCurve<Day> piecewiseFlatCurve, IReadOnlyList<Contract<Day>> bootstrappedContracts)
+                = RunBootstrapWithPiecewiseBlocks();
+
+            foreach ((Day Start, Day End) piecewiseBlock in piecewiseBlocks)
             {
-                double averagePriceWithinBlock = piecewiseFlatCurve.Price(start, end);
-                foreach (Day period in start.EnumerateTo(end))
+                double averagePriceWithinBlock = piecewiseFlatCurve.Price(piecewiseBlock.Start, piecewiseBlock.End);
+                foreach (Day period in piecewiseBlock.Start.EnumerateTo(piecewiseBlock.End))
                 {
                     double dailyPrice = piecewiseFlatCurve[period];
                     Assert.AreEqual(averagePriceWithinBlock, dailyPrice, Tolerance);
                 }
+            }
+        }
 
-                // TODO split this into different unit test?
+        [Test]
+        public void Bootstrap_PiecewiseBlockAdded_BootstrappedContractsContainsPiecewiseBlocks()
+        {
+            ((Day Start, Day End)[] piecewiseBlocks, DoubleCurve<Day> piecewiseFlatCurve, IReadOnlyList<Contract<Day>> bootstrappedContracts)
+                = RunBootstrapWithPiecewiseBlocks();
+
+            foreach ((Day Start, Day End) piecewiseBlock in piecewiseBlocks)
+            {
                 bool bootstrappedContractsContainsBlock = bootstrappedContracts
-                    .Count(contract => contract.Start == start && contract.End == end) == 1;
+                    .Count(contract => contract.Start == piecewiseBlock.Start && contract.End == piecewiseBlock.End) == 1;
                 Assert.IsTrue(bootstrappedContractsContainsBlock);
             }
         }

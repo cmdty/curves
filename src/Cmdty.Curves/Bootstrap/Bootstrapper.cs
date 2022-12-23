@@ -115,7 +115,7 @@ namespace Cmdty.Curves
                 _allowRedundancy, _piecewiseBlocks);
         }
 
-        // TODO include discount factors
+        // TODO include discount factors explicitly or let caller incorporate in weighting?
         private static BootstrapResults<T> Calculate([NotNull] List<Contract<T>> contracts, [NotNull] Func<T, double> weighting,
             [NotNull] List<Shaping<T>> shapings, DoubleTimeSeries<T> targetBootstrappedCurve, bool allowRedundancy, 
             List<(T Start, T End)> piecewiseBlocks)
@@ -289,24 +289,49 @@ namespace Cmdty.Curves
             {
                 T outputPeriod = allOutputPeriodsOffsetByOne[i];
                 // TODO make code efficient, first sort etc
-                //bool piecewiseBlockStartsHere
-                (T Start, T End)? piecewiseBlockNullable = piecewiseBlocksSorted.FirstOrDefault(block => block.Start.Equals(outputPeriod));
-                bool insidePiecewiseBlock = false;
-                if (piecewiseBlockNullable != null)
-                    insidePiecewiseBlock = true;
+                // Conditions for triggering the averaging of a block ending 1 step previous to outputPeriod:
+                // 1. Contract or shaping starts in outputPeriod (unless outputPeriod is inside piecewise block) or
+                // 2. Piecewise block start in outputPeriod or
+                // 3. Contract or shaping ends 1 step previous (unless outputPeriod.Previous() is inside piecewise block)
+                // 4. Piecewise block ends outputPeriod.Previous()
 
-                
+                bool doAveraging = false;
+                bool insidePiecewiseBlock = piecewiseBlocksSorted
+                    .Any(block => block.Start.CompareTo(outputPeriod) <= 0 && block.End.CompareTo(outputPeriod) >= 0);
 
-                bool contractOrShapingStartsHere = contracts.Any(contract => contract.Start.Equals(outputPeriod)) ||
+                bool contractOrShapingStartsHere = insidePiecewiseBlock ? false :
+                    contracts.Any(contract => contract.Start.Equals(outputPeriod)) ||
                         shapings.Any(shaping => shaping.Start1.Equals(outputPeriod) || shaping.Start2.Equals(outputPeriod));
 
-                bool inputEndsOneStepBefore = contracts.Any(contract => contract.End.Next().Equals(outputPeriod)) ||
-                        shapings.Any(shaping => shaping.End1.Next().Equals(outputPeriod) || shaping.End2.Next().Equals(outputPeriod));
+                doAveraging = contractOrShapingStartsHere;
 
-                // TODO refactor OR
-                if (contractOrShapingStartsHere || insidePiecewiseBlock || inputEndsOneStepBefore) // New output period
+                T previous = outputPeriod.Previous();
+                if (!doAveraging)
                 {
-                    var contractEnd = outputPeriod.Previous();
+                    bool oneStepBeforeInsidePiecewiseBlock = piecewiseBlocksSorted
+                        .Any(block => block.Start.CompareTo(previous) <= 0 && block.End.CompareTo(previous) >= 0);
+
+                    bool inputEndsOneStepBefore = oneStepBeforeInsidePiecewiseBlock ? false :
+                        contracts.Any(contract => contract.End.Next().Equals(outputPeriod)) ||
+                            shapings.Any(shaping => shaping.End1.Next().Equals(outputPeriod) || shaping.End2.Next().Equals(outputPeriod));
+                    doAveraging = inputEndsOneStepBefore;
+                }
+
+                if (!doAveraging)
+                {
+                    bool piecewiseBlockStartsHere = piecewiseBlocksSorted.Any(block => block.Start.Equals(outputPeriod));
+                    doAveraging = piecewiseBlockStartsHere;
+                }
+
+                if (!doAveraging)
+                {
+                    bool piecewiseBlockEndsOneStepPrevious = piecewiseBlocksSorted.Any(block => block.End.Equals(previous));
+                    doAveraging = piecewiseBlockEndsOneStepPrevious;
+                }
+
+                if (doAveraging) 
+                {
+                    var contractEnd = previous;
 
                     // Calculate weighted average price
                     // Add to bootstrappedContracts
