@@ -72,6 +72,7 @@ the contract delivery period in the contract tuples and use of the helper module
 ```python
 from curves import max_smooth_interp
 from curves import contract_period as cp
+import pandas as pd
 
 contracts = [
     (date(2019, 5, 31), 34.875), 
@@ -146,3 +147,15 @@ Displays the following:
  'M': Cmdty.TimePeriodValueTypes.Month,
  'Q': Cmdty.TimePeriodValueTypes.Quarter}
 ```
+
+### .NET Dependency For non-Windows OS
+As Cmdty.Curves is mostly written in C# it requires the .NET runtime to be installed to execute.
+The dlls are targetting [.NET Standard 2.0](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0) which is compatible with .NET Framework versions 4.6.1
+upwards. A version of .NET Framework meeting this restriction should be installed on most
+Windows computers, so nothing extra is required.
+
+If running on a non-Windows OS then the runtime of a cross-platform type of .NET will be 
+required. .NET Standard is compatible with .NET and Mono, with the former being recommended.
+For the Python package, by default it will try to use .NET, and if this isn't installed it will
+try Mono. See the Microsoft documentation on installing the .NET runtime on [Linux](https://learn.microsoft.com/en-us/dotnet/core/install/linux)
+and on [macOS](https://learn.microsoft.com/en-us/dotnet/core/install/macos).

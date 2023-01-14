@@ -10,7 +10,7 @@ Set of tools written in C# for constructing commodity forward/futures/swap curve
 ### Table of Contents
 * [Overview](#overview)
 * [Installing](#installing)
-    * [Installing For Python on Linux](#installing-for-python-on-linux)
+* [.NET Dependency](#net-dependency)
 * [Getting Started](#getting-started)
     * [Using From C#](#using-from-c)
         * [Bootstrapper](#bootstrapper)
@@ -70,14 +70,18 @@ For use from Python install the curves package from PyPI.
 ```
 > pip install curves
 ```
-### Installing For Python on Linux
-Currently only a small amount of testing has been done for the Python package running on Linux (Ubuntu 18.04 LTS running in Windows 10 WSL) via the Mono runtime, using Python version 3.6.8. The following Linux dependencies have to be installed, as listed on [the pythonnet wiki](https://github.com/pythonnet/pythonnet/wiki/Troubleshooting-on-Windows,-Linux,-and-OSX):
-* Mono-develop or Mono-complete.
-* clang.
-* libglib2.0-dev.
-* python-dev. Specifically the package python3.6-dev was installed.
 
-It was also found that the PyPI package pycparser had to be installed, in order for the pythonnet PyPI package to install correctly.
+## .NET Dependency
+As Cmdty.Curves is mostly written in C# it requires the .NET runtime to be installed to execute.
+The dlls are targetting [.NET Standard 2.0](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0) which is compatible with .NET Framework versions 4.6.1
+upwards. A version of .NET Framework meeting this restriction should be installed on most
+Windows computers, so nothing extra is required.
+
+If running on a non-Windows OS then the runtime of a cross-platform type of .NET will be 
+required. .NET Standard is compatible with .NET and Mono, with the former being recommended.
+For the Python package, by default it will try to use .NET, and if this isn't installed it will
+try Mono. See the Microsoft documentation on installing the .NET runtime on [Linux](https://learn.microsoft.com/en-us/dotnet/core/install/linux)
+and on [macOS](https://learn.microsoft.com/en-us/dotnet/core/install/macos).
 
 ## Getting Started
 
@@ -203,6 +207,7 @@ the bootstrap_contracts method is first used to remove the overlaps from the con
 ```python
 from curves import max_smooth_interp
 from curves import contract_period as cp
+import pandas as pd
 
 contracts = [
     (date(2019, 5, 31), 34.875), 
@@ -258,7 +263,7 @@ Freq: D, Length: 854, dtype: float64
 The curves package should be compatible with the Python interpreter up to **version 3.11**.
 
 Limitations on the Python version which the curves package can be used
-are largely driven by the [pythonnet](https://github.com/pythonnet/pythonnet) package dependency. The latest version of curves (1.2.0) depends on
+are largely driven by the [pythonnet](https://github.com/pythonnet/pythonnet) package dependency. The latest version of curves (1.3.0) depends on
 pythonnet version 3.0.1, which itself works with Python up to version 3.11.
 Hence this is also the maximum version with which curves works.
 
