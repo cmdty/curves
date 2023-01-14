@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net45</TargetFrameworks>
+	<NetFrameworkVersion>net461</NetFrameworkVersion>
+    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);$(NetFrameworkVersion)</TargetFrameworks>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
@@ -16,7 +17,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkVersion)'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 

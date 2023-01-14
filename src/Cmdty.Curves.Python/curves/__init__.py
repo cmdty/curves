@@ -21,6 +21,18 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+import platform
+
+os = platform.system()
+# On non-Windows platform try to load Core CLR, rather than the default behaviour which is to load Mono.
+if os != 'Windows':
+    from pythonnet import load
+
+    try:
+        load('coreclr')
+    except:
+        print('Could not load Core CLR runtime, on non-Windows OS, so falling back to Mono.')
+
 from curves.bootstrap import bootstrap_contracts
 from curves.spline import max_smooth_interp
 from curves._common import FREQ_TO_PERIOD_TYPE

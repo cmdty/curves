@@ -17,3 +17,8 @@ Update .NET Cmdty.TimeSeries reference to avoid clash with cmdty-storage package
 
 ### 1.2.0
 * Update pythonnet dependency from 2.5.1 to 3.0.1 to allow compatibility with Python up to version 3.11.
+
+### 1.3.0 (Not yet released)
+* .NET binaries included in Python package target .NET Standard, not .NET Framework, hence compatible with
+more .NET types.
+* For non-Windows OS default to trying .NET (Core), rather than Mono as default runtime.

@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);net45</TargetFrameworks>
-    <PackageId>Cmdty.Curves</PackageId>
+	<NetStandardTargetFramework>netstandard2.0</NetStandardTargetFramework>
+	<TargetFrameworks>$(NetStandardTargetFramework)</TargetFrameworks>
+	<FullNetVersion>net461</FullNetVersion>
+	<TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">$(TargetFrameworks);$(FullNetVersion)</TargetFrameworks>
+	<PackageId>Cmdty.Curves</PackageId>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/cmdty/curves</PackageProjectUrl>
@@ -21,13 +23,17 @@
     <PythonVersion Condition="'$(PrereleaseNumber)' != ''">$(VersionPrefix)$(PythonPreReleaseTextPart)$(PrereleaseNumber)</PythonVersion>
   </PropertyGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == 'net45'">
-    <ItemGroup>
-      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.dll" />
-      <FilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\net45\*.pdb" />
-    </ItemGroup>
-    <MakeDir Directories="..\Cmdty.Curves.Python\curves\lib" />
-    <Copy SourceFiles="@(FilesToCopyForPython)" DestinationFolder="..\Cmdty.Curves.Python\curves\lib" OverwriteReadOnlyFiles="true" />
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)' == '$(NetStandardTargetFramework)'">
+	 <Exec Command="dotnet publish -f $(NetStandardTargetFramework) --no-build -c $(Configuration) --nologo" />
+	 <PropertyGroup>
+	   <PythonLibDir>..\Cmdty.Curves.Python\curves\lib</PythonLibDir>
+	 </PropertyGroup>
+	 <ItemGroup>
+	   <ManagedFilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\$(NetStandardTargetFramework)\publish\*.dll" />
+	   <ManagedFilesToCopyForPython Include="$(ProjectDir)bin\$(ConfigurationName)\$(NetStandardTargetFramework)\publish\*.pdb" />
+	 </ItemGroup>
+	<MakeDir Directories="$(PythonLibDir)" />
+	<Copy SourceFiles="@(ManagedFilesToCopyForPython)" DestinationFolder="..\Cmdty.Curves.Python\curves\lib" OverwriteReadOnlyFiles="true" />
     <WriteLinesToFile File="..\Cmdty.Curves.Python\curves\__version__.py" Lines="__version__ = '$(PythonVersion)'" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
@@ -39,11 +45,11 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetStandardTargetFramework)'">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" version="4.5.2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(FullNetVersion)'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
