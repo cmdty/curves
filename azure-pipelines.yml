@@ -16,8 +16,8 @@ steps:
 
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: '3.7'
-    displayName: "Use Python 3.7"
+      versionSpec: '3.11'
+    displayName: "Use Python 3.11"
 
   - task: NuGetToolInstaller@1
     inputs:
