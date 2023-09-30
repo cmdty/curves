@@ -221,33 +221,6 @@ $z_i$, $z_{-1}$, $y_i$ and $y_{i-1}$.
 
 This constraint should be held for $j=1 \hdots n$.
 
-\subsubsection{Adding in an Extra Constraint}
-
-In case we need to add another contraint to ensure are linear system has a unique solution.
-Constraint the first derivative of one of the knots to be equal to the slope calculated
-from the two surrounding knots.
-
-\begin{equation}
-    p^\prime_i(t_{i-1}) = \frac{y_i - y_{i-2}}{h_i + h_{i-1}}
-\end{equation}
-
-Substituting this in:
-
-\begin{multline}
-    p^\prime_i(t_{i-1}) = \frac{y_i - y_{i-2}}{h_i + h_{i-1}} = z_i \biggl( \frac{1}{\tau_i \sinh(\tau_i h_i)} - \frac{1}{h_i \tau_i^2} \biggr) 
-        + z_{i-1} \biggl( \frac{1}{h_i \tau_i^2} - \frac{ \cosh(\tau_i h_i)}{\tau_i \sinh(\tau_i h_i)} \biggr)\\
-        + y_i \frac{1}{h_i} - y_{i - 1} \frac{1}{h_i}
-\end{multline}
-
-Rearranging:
-
-\begin{multline}
-    0 = z_i \biggl( \frac{1}{\tau_i \sinh(\tau_i h_i)} - \frac{1}{h_i \tau_i^2} \biggr) 
-        + z_{i-1} \biggl( \frac{1}{h_i \tau_i^2} - \frac{ \cosh(\tau_i h_i)}{\tau_i \sinh(\tau_i h_i)} \biggr)\\
-        + y_i \biggl( \frac{1}{h_i} - \frac{1}{h_i + h_{i-1}} \biggr) - y_{i - 1} \frac{1}{h_i}
-        + y_{i-2} \frac{1}{h_i + h_{i-1}}
-\end{multline}
-
 \subsubsection{Matrix Form of Constraints}
 %Equations \ref{eq:continuity_constraint}, \ref{eq:1st_deriv_constraint}, \ref{eq:2nd_deriv_constraint} and
 % \ref{eq:price_constraint} can be expressed as the linear system $\+{Ax = b}$ where:
