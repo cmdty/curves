@@ -56,7 +56,8 @@ def hyperbolic_tension_spline(contracts: tp.Union[ContractsType, pd.Series],
                               KnotPositions]] = KnotPositions.CONTRACT_START_AND_END,  # TODO update docstring for KnotPositions enum
                               front_1st_deriv: tp.Optional[float] = None,
                               back_1st_deriv: tp.Optional[float] = None,
-                              return_spline_coeff: tp.Optional[bool] = False
+                              return_spline_coeff: tp.Optional[bool] = False,
+                              out_curve: tp.Optional[pd.Series] = None
                               ) -> tp.Union[pd.Series, tp.Tuple[pd.Series, pd.DataFrame]]:
     """
     Creates a smooth interpolated curve from a collection of commodity forward/swap/futures prices using hyperbolic tension spline algorithm.
@@ -150,6 +151,8 @@ def hyperbolic_tension_spline(contracts: tp.Union[ContractsType, pd.Series],
             curve must be. If this parameter is omitted no constraint is applied.
         return_spline_coeff (bool, optional): Flag to determine whether the solved spline coefficients should be returned as the second
             element in a 2-tuple. Defaults to False if omitted.
+        out_curve (pandas.Series, optional): A Series into which the smoothed contiguous curve is written.
+            This argument can be used by the called to control the allocation of heap memory used to place the calculated curve.
 
     Returns:
         Either pandas.Series, or 2-tuple of (pandas.Series, pandas.DataFrame) if return_spline_coeff argument is True.
@@ -240,6 +243,11 @@ def hyperbolic_tension_spline(contracts: tp.Union[ContractsType, pd.Series],
                 raise ValueError('spline_knots should not contain items after the latest contract delivery period.'
                                  'Element {} contains {} which is after the latest delivery of {}.'
                                  .format(i, spline_knots_list[i], last_period))
+
+    if out_curve is not None:
+        if out_curve.index.freqstr != freq:
+            raise ValueError('out_curve argument must have frequency consistent with freq argument. However, out_curve.index.freqstr is'
+                             ' {} and freq is {}.'.format(out_curve.index.freqstr, freq))
 
     if time_zone is None:
         result_curve_index = pd.period_range(start=first_period, end=last_period, freq=freq)
